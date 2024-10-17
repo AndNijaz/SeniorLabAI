@@ -4,43 +4,27 @@ import Button from "./ui/Button";
 import Container from "./ui/Container";
 import ResultCard from "./ui/ResultCard";
 import BottomLine from "./ui/BottomLine";
+import Magnifyer from "./ui/Magnifyer";
+import { useState } from "react";
+import Cross from "./ui/Cross";
+import Search from "./features/Search/Search";
+import AppFeatures from "./features/app-features/AppFeatures";
 
 function App() {
   return (
     <>
       <Header />
       <Container>
-        <div className="flex gap-4 justify-center mb-4">
-          <Button size="large">Text</Button>
-          <Button size="large">T</Button>
-          <Button size="large">Text</Button>
-        </div>
-        <Button size="small" color="light" className="mx-auto mb-6">
-          Sklonite dugmad
-        </Button>
+        {/* Features Buttons (zoom in, zoom out, theme); Hide Buttons Button */}
+        <AppFeatures />
 
-        <div className="flex gap-2 items-center mb-2 text-lg">
-          <p className="text-xl text-main-800 font-semibold">
-            Pitajte što god vas zanima 😀
-          </p>
-          <Button size="small" color="light">
-            OČISTI
-          </Button>
-        </div>
+        {/* Text Area Label; Text Area; Clear Button */}
+        <Search />
 
-        <textarea
-          className="w-full bg-neutral-300 rounded-md px-2 py-2 text-2xl mb-4"
-          rows={4}
-          placeholder="Kako poslati sliku na fejzbuku"
-        />
-
-        <Button type="medium" className="w-full mb-8">
-          Pretražite
-        </Button>
-
+        {/* Resault Caert with its features */}
         <ResultCard />
 
-        <Button type="medium" color="light" className="w-full mb-8">
+        <Button type="medium" color="light" className="w-full mb-32">
           Očisti rezultate
         </Button>
       </Container>

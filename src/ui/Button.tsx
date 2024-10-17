@@ -32,12 +32,12 @@ const Button: React.FC<ButtonProps> = ({
 
   // console.log(buttonClassName);
   let buttonClassName =
-    "flex items-center justify-center gap-4 rounded-xl transition duration-200 uppercase";
+    "gap-4 items-center justify-center flex rounded-xl transition duration-200 uppercase";
 
   // Apply size classes
   switch (size.toLowerCase()) {
     case "small":
-      buttonClassName += ` px-4 py-2 text-sm`;
+      buttonClassName += ` px-4 py-2 text-sm !gap-1`;
       break;
     case "medium":
       buttonClassName += ` px-6 py-3 text-lg`;
