@@ -32,7 +32,7 @@ const Button: React.FC<ButtonProps> = ({
 
   // console.log(buttonClassName);
   let buttonClassName =
-    "gap-4 items-center justify-center flex rounded-xl transition duration-200 uppercase dark:bg-[#005f5f] text-[#ffffff]";
+    "gap-4 items-center justify-center flex rounded-xl transition duration-200 uppercase dark:bg-[#005f5f] text-white";
 
   // Apply size classes
   switch (size.toLowerCase()) {
@@ -52,7 +52,7 @@ const Button: React.FC<ButtonProps> = ({
   // Apply color classes
   switch (color.toLowerCase()) {
     case "light":
-      buttonClassName += ` bg-main-200 text-main-800`;
+      buttonClassName += ` bg-main-200 !text-main-800 dark:bg-[#005f5f]/40 dark:!text-white/90`;
       break;
     case "normal":
       buttonClassName += ` bg-main-500 text-white`;

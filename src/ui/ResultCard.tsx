@@ -1,8 +1,13 @@
 import { useState } from "react";
 import Modal from "./Modal";
 import { createPortal } from "react-dom";
+import { useTheme } from "../features/theme-select/ThemeProvider";
+import { useSearch } from "../features/Search/SearchProvider";
 
 function ResultCard() {
+  const { result } = useSearch();
+  const { title, description } = result;
+
   const [isOpenModal, setIsOpenModal] = useState(false);
 
   function handleSetModal() {
@@ -26,37 +31,9 @@ function ResultCard() {
         stranicu
       </p>
       <h3 className="text-main-800 font-semibold text-4xl mb-4 dark:text-main-300">
-        Dijeljenje fotografija na Facebooku
+        {title}
       </h3>
-      <p className="text-xl">
-        Lorem ipsum dolor sit amet, consectetur adipisicing elit. Quo eligendi,
-        reprehenderit molestias mollitia, distinctio voluptatum saepe facere
-        laborum molestiae doloremque a asperiores minima, quidem dignissimos
-        totam aperiam amet repellendus error? Lorem, ipsum dolor sit amet
-        consectetur adipisicing elit. Quis culpa provident amet inventore
-        architecto vel tenetur placeat et? Quia iusto ad itaque blanditiis,
-        doloremque ullam velit fugit unde! Repudiandae, ipsam? Lorem ipsum dolor
-        sit amet, consectetur adipisicing elit. Quo eligendi, reprehenderit
-        molestias mollitia, distinctio voluptatum saepe facere laborum molestiae
-        doloremque a asperiores minima, quidem dignissimos totam aperiam amet
-        repellendus error? Lorem, ipsum dolor sit amet consectetur adipisicing
-        elit. Quis culpa provident amet inventore architecto vel tenetur placeat
-        et? Quia iusto ad itaque blanditiis, doloremque ullam velit fugit unde!
-        Repudiandae, ipsam? Lorem ipsum dolor sit amet, consectetur adipisicing
-        elit. Quo eligendi, reprehenderit molestias mollitia, distinctio
-        voluptatum saepe facere laborum molestiae doloremque a asperiores
-        minima, quidem dignissimos totam aperiam amet repellendus error? Lorem,
-        ipsum dolor sit amet consectetur adipisicing elit. Quis culpa provident
-        amet inventore architecto vel tenetur placeat et? Quia iusto ad itaque
-        blanditiis, doloremque ullam velit fugit unde! Repudiandae, ipsam? Lorem
-        ipsum dolor sit amet, consectetur adipisicing elit. Quo eligendi,
-        reprehenderit molestias mollitia, distinctio voluptatum saepe facere
-        laborum molestiae doloremque a asperiores minima, quidem dignissimos
-        totam aperiam amet repellendus error? Lorem, ipsum dolor sit amet
-        consectetur adipisicing elit. Quis culpa provident amet inventore
-        architecto vel tenetur placeat et? Quia iusto ad itaque blanditiis,
-        doloremque ullam velit fugit unde! Repudiandae, ipsam?
-      </p>
+      <p className="text-xl">{description}</p>
     </div>
   );
 }
