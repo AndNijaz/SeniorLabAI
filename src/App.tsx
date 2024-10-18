@@ -3,14 +3,18 @@ import "./index.css";
 import Button from "./ui/Button";
 import Container from "./ui/Container";
 import ResultCard from "./ui/ResultCard";
-import BottomLine from "./ui/BottomLine";
-import Magnifyer from "./ui/Magnifyer";
-import { useState } from "react";
-import Cross from "./ui/Cross";
+import Footer from "./ui/Footer";
 import Search from "./features/Search/Search";
 import AppFeatures from "./features/app-features/AppFeatures";
+import { useEffect } from "react";
+import { useTheme } from "./features/theme-select/ThemeProvider";
 
 function App() {
+  // useEffect(,[theme]);
+
+  const x = useTheme();
+  console.log(x);
+
   return (
     <>
       <Header />
@@ -29,7 +33,7 @@ function App() {
         </Button>
       </Container>
 
-      <BottomLine />
+      <Footer />
     </>
   );
 }

@@ -32,7 +32,7 @@ const Button: React.FC<ButtonProps> = ({
 
   // console.log(buttonClassName);
   let buttonClassName =
-    "gap-4 items-center justify-center flex rounded-xl transition duration-200 uppercase";
+    "gap-4 items-center justify-center flex rounded-xl transition duration-200 uppercase dark:bg-[#005f5f] text-[#ffffff]";
 
   // Apply size classes
   switch (size.toLowerCase()) {
