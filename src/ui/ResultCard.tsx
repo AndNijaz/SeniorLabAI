@@ -1,8 +1,21 @@
 import React from "react";
+import Modal from "./Modal";
+import { useState } from "react";
 
 function ResultCard() {
+  const [isOpenModal, setIsOpenModal] = useState(false);
+
+  function handleOpenModal(param) {
+    console.log(param);
+    setIsOpenModal(param);
+  }
+
   return (
-    <div className="w-full rounded-md px-16 py-4  bg-neutral-100 mb-16">
+    <div
+      className="w-full rounded-md px-16 py-4  bg-neutral-100 mb-16"
+      onClick={() => handleOpenModal(true)}
+    >
+      {isOpenModal && <Modal setShowModal={handleOpenModal} />}
       <p className="text-main-800 font-semibold">
         REZULTAT - Kliknite bilo gdje unutar sive površine za odlazak na
         stranicu
