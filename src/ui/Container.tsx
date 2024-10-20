@@ -9,8 +9,7 @@ function Container({
 }) {
   return (
     <div
-      // className={`mx-auto overflow-scroll no-scrollbar scrollbar-none ${className}`}
-      className={`max-w-7xl mx-auto overflow-scroll no-scrollbar scrollbar-none ${className}`}
+      className={`w-[896px] mx-auto overflow-scroll no-scrollbar scrollbar-none tt:w-[672px] st:w-[512px] mp:w-[320px] ${className}`}
     >
       {children}
     </div>

@@ -1,6 +1,6 @@
 import "./index.css";
 import Container from "./ui/Container";
-import ResultCard from "./ui/ResultCard";
+import ResultCard from "./features/Search/ResultCard";
 import Search from "./features/Search/Search";
 import AppFeatures from "./features/app-features/AppFeatures";
 import { ClearSearchButton, useSearch } from "./features/Search/SearchProvider";

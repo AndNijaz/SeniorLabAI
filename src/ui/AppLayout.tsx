@@ -4,7 +4,7 @@ import Footer from "./Footer";
 
 function AppLayout({ children }) {
   return (
-    <div className="flex flex-col h-[100svh]">
+    <div className="flex flex-col h-[100vh]">
       <Header />
       {children}
       <Footer />

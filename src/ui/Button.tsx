@@ -7,9 +7,11 @@ interface ButtonProps {
   className?: string;
   color?: string;
   size?: string;
+  disabled?: boolean;
 }
 
 const Button: React.FC<ButtonProps> = ({
+  disabled = false,
   onClick,
   // type = "",
   color = "",
@@ -21,18 +23,8 @@ const Button: React.FC<ButtonProps> = ({
     if (onClick) onClick();
   }
 
-  // let buttonClassName =
-  //   "flex items-center justify-center gap-4 rounded-xl transition duration-200  uppercase";
-
-  // if (type.toLowerCase() === "small")
-  //   buttonClassName += ` bg-main-200 text-main-800 px-4 py-2 text-sm`;
-  // else if (type.toLowerCase() === "medium")
-  //   buttonClassName += `bg-main-500 text-white px-4 py-2 text-lg`;
-  // else buttonClassName += ` bg-main-500 text-white px-8 py-4 text-3xl`;
-
-  // console.log(buttonClassName);
   let buttonClassName =
-    "gap-4 items-center justify-center flex rounded-xl transition duration-200 uppercase dark:bg-[#005f5f] text-white";
+    "gap-4 items-center justify-center flex rounded-xl transition duration-200 uppercase dark:bg-[#005f5f] text-white dark:disabled:bg-[#003030] disabled:bg-main-700 disabled:text-gray-400 dark:disabled:text-gray-500 hover:bg-main-600 hover:shadow-xl hover:scale-110 dark:hover:bg-[#337f7f] disabled:hover:scale-100 disabled:hover:shadow-none";
 
   // Apply size classes
   switch (size.toLowerCase()) {
@@ -43,7 +35,7 @@ const Button: React.FC<ButtonProps> = ({
       buttonClassName += ` px-6 py-3 text-lg`;
       break;
     case "large":
-      buttonClassName += ` px-8 py-4 text-3xl`;
+      buttonClassName += ` px-8 py-4 text-3xl st:px-4 st:text-2xl st:py-2`;
       break;
     default:
       buttonClassName += ` px-6 py-3 text-lg`; // Fallback to medium size
@@ -52,7 +44,7 @@ const Button: React.FC<ButtonProps> = ({
   // Apply color classes
   switch (color.toLowerCase()) {
     case "light":
-      buttonClassName += ` bg-main-200 !text-main-800 dark:bg-[#005f5f]/40 dark:!text-white/90`;
+      buttonClassName += ` bg-main-200 !text-main-800 dark:bg-[#005f5f]/40 dark:!text-white/90 hover:bg-main-400 hover:dark:bg-[#337f7f]/40`;
       break;
     case "normal":
       buttonClassName += ` bg-main-500 text-white`;
@@ -65,7 +57,11 @@ const Button: React.FC<ButtonProps> = ({
   }
 
   return (
-    <button onClick={handleClick} className={`${buttonClassName} ${className}`}>
+    <button
+      onClick={handleClick}
+      className={`${buttonClassName} ${className}`}
+      disabled={disabled}
+    >
       {children}
     </button>
   );

@@ -11,6 +11,9 @@
     font-style: normal;
     font-variation-settings: "wdth" 100;
     @apply dark:bg-gray-900;
+    /* zoom: 1.5; */
+    /* transform: scale(0.8); */
+    /* transform-origin: 0 0; */
   }
 }
 

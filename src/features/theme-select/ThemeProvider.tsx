@@ -2,10 +2,6 @@ import { createContext, useContext, useEffect, useState } from "react";
 
 const ThemeContext = createContext();
 
-const initialState = {
-  theme: "light",
-};
-
 function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(localStorage.getItem("theme") || "light");
 

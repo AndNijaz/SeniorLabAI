@@ -1,17 +1,17 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Button from "../../ui/Button";
 import Cross from "../../ui/Cross";
 import Magnifyer from "../../ui/Magnifyer";
 import Moon from "../../ui/Moon";
 import Sun from "../../ui/Sun";
 import { useTheme } from "../theme-select/ThemeProvider";
+import ThemeSelect from "../theme-select/ThemeSelect";
+import { useZoom } from "./useZoom";
 
 function AppFeatures() {
-  const { theme, handleSetTheme } = useTheme();
-
   const [buttonsVisible, setButtonsVisible] = useState(true);
 
-  const [zoomLevel, setZoomLevel] = useState(1); // Default scale
+  const [zoomLevel, handleZoomIn, handleZoomOut] = useZoom();
 
   if (!buttonsVisible)
     return (
@@ -24,29 +24,19 @@ function AppFeatures() {
       </Button>
     );
 
-  const handleZoomIn = () => {
-    setZoomLevel((prev) => Math.min(prev + 0.1, 2)); // Max zoom level 2x
-  };
-
-  const handleZoomOut = () => {
-    setZoomLevel((prev) => Math.max(prev - 0.1, 0.5)); // Min zoom level 0.5x
-  };
-
   return (
     <>
-      <div className="flex gap-4 justify-center mb-4">
-        <Button size="large" onClick={handleZoomOut}>
+      <div className="flex gap-4 justify-center mb-4 mp:flex-col">
+        <Button
+          size="large"
+          onClick={handleZoomOut}
+          disabled={zoomLevel === 0.9}
+        >
           Odaljite
           <Magnifyer className="size-8" />
         </Button>
-        <Button size="large" onClick={handleSetTheme}>
-          {theme === "light" ? (
-            <Sun className="size-12" />
-          ) : (
-            <Moon className="size-12" />
-          )}
-        </Button>
-        <Button size="large" onClick={handleZoomIn}>
+        <ThemeSelect />
+        <Button size="large" onClick={handleZoomIn} disabled={zoomLevel === 2}>
           Približite
           <Magnifyer className="size-8" />
         </Button>

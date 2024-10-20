@@ -19,7 +19,7 @@ export default {
       },
     },
     screens: {
-      sD: { max: "1350px" },
+      sD: { max: "1344px" },
 
       lt: { max: "1200px" },
 
