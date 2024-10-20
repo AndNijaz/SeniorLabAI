@@ -34,6 +34,8 @@ tokensoutput = 0
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_KEY")
 
+
+
 def check_for_illegal_content(text, user_ip):
     """
     This function uses OpenAI's moderation API to check if the provided text 
@@ -59,7 +61,13 @@ def check_for_illegal_content(text, user_ip):
             # If flagged, log the IP address in the illegal-activity.log file
             logging.error(f"Illegal content detected from IP: {user_ip}")
             with open("illegal-activity.log", "a") as log_file:
-                log_file.write(f"{datetime.now()} - IP: {user_ip} - Content: {text}\n")
+                # Try converting the response to a dict-like structure.
+                response_dict = {
+                    'model': response.model,
+                    'results': [result.to_dict() for result in response.results],  # Example if results are objects
+                }
+                formatted_report = json.dumps(response_dict, indent=4, sort_keys=True)
+                log_file.write(f"{datetime.now()} - IP: {user_ip} - Content: {text}\nReport: {formatted_report}\n\n")
             return True
     except Exception as e:
         # Log any errors encountered during moderation checks
@@ -67,6 +75,7 @@ def check_for_illegal_content(text, user_ip):
         logging.debug(traceback.format_exc())
 
     return False
+
 
 
 def trim_messages(messages, max_tokens):

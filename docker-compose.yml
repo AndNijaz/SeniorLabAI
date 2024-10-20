@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./Frontend
+    ports:
+      - "9911:5173"
+    environment:
+      - VITE_OPEN_AI_ENDPOINT=http://localhost:8468/
+      - REACT_APP_API_ENDPOINT=http://localhost:8000/api
+    depends_on:
+      - backend
+    networks:
+      - app_network
+
+  backend:
+    build:
+      context: ./Backend
+    ports:
+      - "9921:8468"
+    env_file:
+      - ./Backend/.env
+    networks:
+      - app_network
+
+networks:
+  app_network:
