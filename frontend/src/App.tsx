@@ -5,6 +5,7 @@ import Search from "./features/Search/Search";
 import AppFeatures from "./features/app-features/AppFeatures";
 import { ClearSearchButton, useSearch } from "./features/Search/SearchProvider";
 import AppLayout from "./ui/AppLayout";
+import Spinner from "./ui/Spinner";
 
 function App() {
   const { search } = useSearch();

@@ -6,28 +6,18 @@ import { useSearch } from "./SearchProvider";
 import Subheading from "./Subheading";
 import ResaultHeading from "./ResaultHeading";
 import ResultModal from "./ResultModal";
+import Spinner from "../../ui/Spinner";
+import Button from "../../ui/Button";
 
 function ResultCard() {
-  const { result, isLoading, isError } = useSearch();
-  console.log(result);
+  const { result, isLoading, isError, lastSearch } = useSearch();
   const { content } = result;
-  console.log(content);
-  // const {}
-  // console.log(first);
-  console.log(content);
-  // console.log(title);
-  // console.log(longresponse);
-  // console.log(shortresponse);
-  // const { longresponse, shortresponse, title } = content;
-  console.log(content?.longresponse);
 
   const [isOpenModal, setIsOpenModal] = useState(false);
 
   function handleSetModal() {
     setIsOpenModal((isOpenModal) => !isOpenModal);
   }
-
-  if (isLoading) return;
 
   return (
     <div
@@ -46,12 +36,26 @@ function ResultCard() {
           document.getElementById("root")
         )}
 
-      <Subheading>
-        REZULTAT - Kliknite bilo gdje unutar sive površine za odlazak na
-        stranicu
+      <Subheading className="border-b border-gray-700 mb-2 pb-2">
+        UPIT: {lastSearch}
       </Subheading>
+      {isLoading && <Spinner />}
+
+      {!isLoading && (
+        <Subheading>
+          REZULTAT - Kliknite bilo gdje unutar sive površine za odlazak na
+          stranicu
+        </Subheading>
+      )}
+
       <ResaultHeading>{content?.title}</ResaultHeading>
-      <p className="text-xl mp:text-lg">{content?.shortresponse}</p>
+      <p className="text-xl mp:text-lg mb-4">{content?.shortresponse}</p>
+
+      {!isLoading && (
+        <Button type="large" onClick={handleSetModal} className="w-full">
+          Otvorite Rezultat
+        </Button>
+      )}
     </div>
   );
 }

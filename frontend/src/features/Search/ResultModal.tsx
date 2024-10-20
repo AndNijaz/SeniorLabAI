@@ -20,7 +20,10 @@ function ResultModal({
 
       <hr className="mb-4" />
 
-      <div dangerouslySetInnerHTML={{ __html: content }} />
+      <div
+        dangerouslySetInnerHTML={{ __html: content }}
+        className="dark:text-white/70 mb-4"
+      />
       {/* <p className="text-xl mp:text-lg text-black/80 px-8 mb-4">{content}</p> */}
 
       <hr className="mb-4" />

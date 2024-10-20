@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 
 export function useZoom() {
-  const [zoomLevel, setZoomLevel] = useState(
-    localStorage.getItem("zoomLevel") === "NaN"
-      ? 1
-      : localStorage.getItem("zoomLevel")
-  );
+  const [zoomLevel, setZoomLevel] = useState(localStorage.getItem("zoomLevel"));
+
+  if (zoomLevel) console.log("NIJE DOAR NIKAKO");
+  else {
+    setZoomLevel(1);
+    console.log("NE VALJAAAAAAAAAAA");
+  }
 
   useEffect(() => {
     document.body.style.zoom = zoomLevel + "";

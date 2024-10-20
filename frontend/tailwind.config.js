@@ -4,6 +4,15 @@ export default {
   darkMode: "class",
   theme: {
     extend: {
+      keyframes: {
+        "loading-spinner": {
+          "0%": { transform: "rotate(0deg)" },
+          "100%": { transform: "rotate(360deg)" },
+        },
+      },
+      animation: {
+        "spin-custom": "loading-spinner 1s linear infinite",
+      },
       colors: {
         main: {
           100: "#e6f7f9",

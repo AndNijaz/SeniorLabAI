@@ -7,13 +7,17 @@ function Search() {
   const { search, setSearch, clearSearch } = useSearch();
   const queryRef = useRef(null);
 
+  const { result, isLoading, isError } = useSearch();
+
   function handleSearch() {
+    clearSearch();
     const query = queryRef.current.value;
     if (query.trim()) {
       setSearch(query);
     } else {
       console.log("Search input is empty");
     }
+    queryRef.current.value = "";
   }
 
   return (
@@ -31,9 +35,14 @@ function Search() {
       </div>
 
       <textarea
+        disabled={isLoading}
         className="w-full bg-neutral-300 rounded-md px-2 py-2 text-2xl mb-4 dark:bg-gray-800 dark:text-[#ffffff]"
         rows={4}
-        placeholder="Na primjer, ukucajte: Kako poslati sliku na fejzbuku"
+        placeholder={`${
+          isLoading
+            ? "Trenutno je zahtjev u obradi, molimo sačekajte. "
+            : "Na primjer, ukucajte: Kako poslati sliku na fejzbuku"
+        } `}
         ref={queryRef}
       />
 

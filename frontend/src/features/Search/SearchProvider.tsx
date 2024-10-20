@@ -6,6 +6,7 @@ const SearchContext = createContext();
 
 function SearchProvider({ children }) {
   const [search, setSearch] = useState(false);
+  const [lastSearch, setLastSearch] = useState(false);
   //
   const [result, setResult] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -17,11 +18,13 @@ function SearchProvider({ children }) {
   }
 
   useEffect(() => {
+    setLastSearch(search);
+
     const getData = async () => {
       try {
         setIsLoading(true);
         setIsError(false);
-        console.log(search);
+        // console.log(search);
         const result = await fetchQuery(search);
         setResult(result);
       } catch (error) {
@@ -36,7 +39,15 @@ function SearchProvider({ children }) {
 
   return (
     <SearchContext.Provider
-      value={{ search, setSearch, result, isError, isLoading, clearSearch }}
+      value={{
+        search,
+        setSearch,
+        result,
+        isError,
+        isLoading,
+        clearSearch,
+        lastSearch,
+      }}
     >
       {children}
     </SearchContext.Provider>
