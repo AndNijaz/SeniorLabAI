@@ -17,7 +17,7 @@ import time
 from pydantic import BaseModel
 from flask_cors import CORS
 import pprint
-
+import tiktoken
 # Set up logging
 logging.basicConfig(
     level=logging.DEBUG,
@@ -33,6 +33,23 @@ tokens = 0
 tokensoutput = 0
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_KEY")
+
+def trim_messages(messages, max_tokens):
+    # Initialize tiktoken model. You might need to specify your OpenAI model here.
+    encoder = tiktoken.encoding_for_model("gpt-4")
+    
+    total_tokens = 0
+    trimmed_messages = []
+    
+    for message in reversed(messages):
+        message_tokens = len(encoder.encode(json.dumps(message)))  # Count tokens for the message
+        if total_tokens + message_tokens > max_tokens:
+            break
+        trimmed_messages.append(message)
+        total_tokens += message_tokens
+    
+    # Reverse to maintain original message order
+    return list(reversed(trimmed_messages))
 
 def scrape_webpage(url):
     try:
@@ -187,8 +204,13 @@ CORS(app)
 def chat_completion_request(messages, tools):
     global tokens
     global tokensoutput
+    max_tokens = 128000  # Set buffer for model's response
+    
+    # Trim messages if they exceed the limit
+    trimmed_messages = trim_messages(messages, max_tokens)
+
     response = openai.beta.chat.completions.parse(
-        model="gpt-4o-mini", messages=messages, tools=tools,
+        model="gpt-4o-mini", messages=trimmed_messages, tools=tools,
         response_format=Response
     )
     tokens += int(response.usage.prompt_tokens)
@@ -255,7 +277,7 @@ def index():
         
         messages = [
             {"role": "system", "content": f"Ti si inteligenti pomagac koji samo odgovara na srpskom/bosanskom jeziku. Takodjer pazi za mjesece, ne moj pisati lipanj, nego pisi juni na primjer. OVO JE OBAVEZNO NEZAVISNO STA TI JE NA ULAZU. Ako bilo gdje u tvojim podatcima pisu mjeseci kao na primjer prosinac, to trebas da prevedes na decembar i tako isto za svaki drugi mjesec. Samo napisi text, nemoj nikakvog formatiranja dodati. Takodjer nemoj ni dodavati nove linije, samo cisti tekst. Trenutni datum je {date}\
-            Ako je potrebno da se ovo tacno odgovori, mozes pozvati funkciju search_google da bi nasao vise informacija. longresponse, kad izbacis koristi html, ne moras cijeli kod, samo tagove za to za sta je vezano, nova linija kad treba sa <br>, boldirani text sa <b>, itallics, i sve slicno tome. Ne mozes koristiti <script> tag"},
+            Ako je potrebno da se ovo tacno odgovori, mozes pozvati funkciju search_google da bi nasao vise informacija. longresponse, kad izbacis koristi html, ne moras cijeli kod, samo tagove za to za sta je vezano, nova linija kad treba sa <br>, boldirani text sa <b>, itallics, i sve slicno tome. Ako si koristio internet tokom pretrage, na dnu longresponsa dodaj izvore koje si koristio ko clickable naslov, koji te posalje na taj link. Ne mozes koristiti <script> tag. HTML ne mozes nikako koristiti u shortresponse!"},
             {"role": "user", "content": data}
         ]
         
