@@ -1,4 +1,5 @@
 export const fetchQuery = async (text: string) => {
+  console.log("aaaaa " + text);
   // eslint-disable-next-line no-useless-catch
   try {
     // Instead of URLSearchParams, construct a JSON object
@@ -9,7 +10,7 @@ export const fetchQuery = async (text: string) => {
         headers: {
           "Content-Type": "application/json", // Set the Content-Type to application/json
         },
-        body: JSON.stringify({ text }), // Send text in JSON format
+        body: JSON.stringify({ text: text }), // Send text in JSON format
       }
     );
 

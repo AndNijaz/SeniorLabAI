@@ -8,9 +8,9 @@ function ResultModal({
   content,
   pages,
 }: {
-  heading: string;
+  heading?: string;
   content: string;
-  pages: [string];
+  pages?: [string];
 }) {
   return (
     <div>
@@ -23,14 +23,6 @@ function ResultModal({
       <p className="text-xl mp:text-lg text-black/80 px-8 mb-4">{content}</p>
 
       <hr className="mb-4" />
-
-      <ul className="mb-4">
-        {pages.map((page) => (
-          <li key={page}>
-            <a href={page}>{page}</a>
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }

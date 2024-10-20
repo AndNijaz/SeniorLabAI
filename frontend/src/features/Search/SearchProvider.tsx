@@ -21,6 +21,7 @@ function SearchProvider({ children }) {
       try {
         setIsLoading(true);
         setIsError(false);
+        console.log(search);
         const result = await fetchQuery(search);
         setResult(result);
       } catch (error) {
