@@ -17,7 +17,7 @@ import time
 from pydantic import BaseModel
 from flask_cors import CORS
 import pprint
-
+import tiktoken
 # Set up logging
 logging.basicConfig(
     level=logging.DEBUG,
@@ -33,6 +33,23 @@ tokens = 0
 tokensoutput = 0
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_KEY")
+
+def trim_messages(messages, max_tokens):
+    # Initialize tiktoken model. You might need to specify your OpenAI model here.
+    encoder = tiktoken.encoding_for_model("gpt-4")
+    
+    total_tokens = 0
+    trimmed_messages = []
+    
+    for message in reversed(messages):
+        message_tokens = len(encoder.encode(json.dumps(message)))  # Count tokens for the message
+        if total_tokens + message_tokens > max_tokens:
+            break
+        trimmed_messages.append(message)
+        total_tokens += message_tokens
+    
+    # Reverse to maintain original message order
+    return list(reversed(trimmed_messages))
 
 def scrape_webpage(url):
     try:
@@ -187,8 +204,13 @@ CORS(app)
 def chat_completion_request(messages, tools):
     global tokens
     global tokensoutput
+    max_tokens = 128000  # Set buffer for model's response
+    
+    # Trim messages if they exceed the limit
+    trimmed_messages = trim_messages(messages, max_tokens)
+
     response = openai.beta.chat.completions.parse(
-        model="gpt-4o-mini", messages=messages, tools=tools,
+        model="gpt-4o-mini", messages=trimmed_messages, tools=tools,
         response_format=Response
     )
     tokens += int(response.usage.prompt_tokens)
@@ -200,6 +222,7 @@ def chat_completion_request(messages, tools):
 def chat_with_tools(messages, tools):
     global tokensoutput
     global tokens
+    captured_links = []
 
     try:
         truthvalue = False
@@ -208,40 +231,37 @@ def chat_with_tools(messages, tools):
             tool_calls = response['choices'][0]['message'].get('tool_calls', [])
 
             if tool_calls:
-                tool_call = tool_calls[0]  # Expecting a list, use the first item
-                print("Tool Call:", tool_call)  # For debugging purposes
-
+                tool_call = tool_calls[0]
                 function_call = tool_call.get('function', {})
                 function_name = function_call.get('name', '')
 
                 if function_name == "search_google":
                     truthvalue = True
-
-                    # Use parsed_arguments directly
                     parsed_arguments = function_call.get('parsed_arguments', {})
                     prompt_to_scrape = parsed_arguments.get("search", "")
                     
                     if prompt_to_scrape:
-                        scraping_result = google_search(prompt_to_scrape)
+                        scraping_result = json.loads(google_search(prompt_to_scrape))
+                        # Extract and capture links from the scraping result
+                        for result in scraping_result:
+                            if 'link' in result:
+                                captured_links.append(result['link'])
                         messages.append(
                             {
                                 "role": "assistant",
-                                "content": f"Scraping result: {scraping_result}",
+                                "content": f"Scraping result: {json.dumps(scraping_result)}",
                             }
                         )
             else:
                 return {
                     "content": response['choices'][0]['message']['parsed'],
-                    "internet_search": truthvalue
+                    "internet_search": truthvalue,
+                    "used_links": captured_links  # Include the used links in the result
                 }
 
     except Exception as e:
         logging.error(f"An error occurred: {e}")
         return {"error": "An error occurred"}
-
-# Rest of the code remains the same
-
-
 
 @app.route("/", methods=["POST"])
 def index():
@@ -254,14 +274,32 @@ def index():
         date = datetime.today().strftime("%Y-%m")
         
         messages = [
-            {"role": "system", "content": f"Ti si inteligenti pomagac koji samo odgovara na srpskom/bosanskom jeziku. Takodjer pazi za mjesece, ne moj pisati lipanj, nego pisi juni na primjer. OVO JE OBAVEZNO NEZAVISNO STA TI JE NA ULAZU. Ako bilo gdje u tvojim podatcima pisu mjeseci kao na primjer prosinac, to trebas da prevedes na decembar i tako isto za svaki drugi mjesec. Samo napisi text, nemoj nikakvog formatiranja dodati. Takodjer nemoj ni dodavati nove linije, samo cisti tekst. Trenutni datum je {date}\
-            Ako je potrebno da se ovo tacno odgovori, mozes pozvati funkciju search_google da bi nasao vise informacija. longresponse, kad izbacis koristi html, ne moras cijeli kod, samo tagove za to za sta je vezano, nova linija kad treba sa <br>, boldirani text sa <b>, itallics, i sve slicno tome. Ne mozes koristiti <script> tag"},
+            {
+                "role": "system", 
+                "content": (
+                    f"Ti si inteligenti pomagac koji samo odgovara na srpskom/bosanskom jeziku. "
+                    f"Pazi da koristiš nazive meseci na srpskom, na primer, koristi 'juni' umesto 'lipanj'. "
+                    f"Trenutni datum je {date}. "
+                    "Ako je potrebno da se ovo tačno odgovori, možeš pozvati funkciju search_google da bi našao više informacija. "
+                    "U odgovoru pod nazivom 'longresponse', koristi HTML za formatiranje. "
+                    "Formatiraj tekst koristeći tagove kao što su <br> za nove linije, <b> za podebljani tekst, <em> za italik itd. "
+                    "Dodaj izvore kao naslov koji se može kliknuti koristeći <a> tag sa atributom href. "
+                    "Nikada ne koristi HTML u odgovoru pod nazivom 'shortresponse'. Samo koristi čisti tekst bez dodatnog formatiranja. "
+                    "Za shortcontent imas limit od 50 rijeci, a u longcontent mozes napisati najvise 200 rijeci"
+                )
+            },
             {"role": "user", "content": data}
         ]
         
         result = chat_with_tools(messages, tools)
         
         if isinstance(result, dict):
+            # Append used links to the messages for context
+            messages.append({
+                "role": "system",
+                "content": f"Ovo su izvori koji su korišteni: {', '.join(result.get('used_links', []))}"
+            })
+
             logging.info(f"Input tokens: {tokens}")
             logging.info(f"Input price: {(tokens/1000)*0.000150}$")
             logging.info(f"Output tokens: {tokensoutput}")
