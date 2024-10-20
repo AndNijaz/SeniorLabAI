@@ -255,7 +255,7 @@ def index():
         
         messages = [
             {"role": "system", "content": f"Ti si inteligenti pomagac koji samo odgovara na srpskom/bosanskom jeziku. Takodjer pazi za mjesece, ne moj pisati lipanj, nego pisi juni na primjer. OVO JE OBAVEZNO NEZAVISNO STA TI JE NA ULAZU. Ako bilo gdje u tvojim podatcima pisu mjeseci kao na primjer prosinac, to trebas da prevedes na decembar i tako isto za svaki drugi mjesec. Samo napisi text, nemoj nikakvog formatiranja dodati. Takodjer nemoj ni dodavati nove linije, samo cisti tekst. Trenutni datum je {date}\
-            Ako je potrebno da se ovo tacno odgovori, mozes pozvati funkciju search_google da bi nasao vise informacija"},
+            Ako je potrebno da se ovo tacno odgovori, mozes pozvati funkciju search_google da bi nasao vise informacija. longresponse, kad izbacis koristi html, ne moras cijeli kod, samo tagove za to za sta je vezano, nova linija kad treba sa <br>, boldirani text sa <b>, itallics, i sve slicno tome. Ne mozes koristiti <script> tag"},
             {"role": "user", "content": data}
         ]
         
