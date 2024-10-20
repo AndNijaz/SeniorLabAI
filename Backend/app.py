@@ -15,6 +15,7 @@ import traceback
 import threading
 import time
 from pydantic import BaseModel
+from flask_cors import CORS
 
 # Set up logging
 logging.basicConfig(
@@ -180,7 +181,7 @@ tools = [
     }
 ]
 app = Flask(__name__)
-
+CORS(app)
 def chat_completion_request(messages, tools):
     global tokens
     global tokensoutput
