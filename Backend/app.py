@@ -16,6 +16,7 @@ import threading
 import time
 from pydantic import BaseModel
 from flask_cors import CORS
+import pprint
 
 # Set up logging
 logging.basicConfig(
@@ -159,6 +160,7 @@ def google_search(query):
 class Response(BaseModel):
     longresponse: str
     shortresponse: str
+    title: str
 tools = [
     {
         "type": "function",
