@@ -347,7 +347,7 @@ def index():
                     "Ako je potrebno da se ovo tačno odgovori, možeš pozvati funkciju search_google da bi našao više informacija. "
                     "U odgovoru pod nazivom 'longresponse', koristi HTML za formatiranje. "
                     "Formatiraj tekst koristeći tagove kao što su <br> za nove linije, <b> za podebljani tekst, <em> za italik itd. "
-                    "Dodaj izvore kao naslov koji se može kliknuti koristeći <a> tag sa atributom href. "
+                    "Dodaj izvore kao naslov koji se može kliknuti koristeći <a> tag sa atributom href. Napravi da su tagovi plave boje da se vidi sta je link a sta nije! "
                     "Nikada ne koristi HTML u odgovoru pod nazivom 'shortresponse'. Samo koristi čisti tekst bez dodatnog formatiranja. "
                     "Za shortcontent imas limit od 50 rijeci, a u longcontent mozes napisati najvise 200 rijeci"
                 )
