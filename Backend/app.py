@@ -62,12 +62,7 @@ def check_for_illegal_content(text, user_ip):
             logging.error(f"Illegal content detected from IP: {user_ip}")
             with open("illegal-activity.log", "a") as log_file:
                 # Try converting the response to a dict-like structure.
-                response_dict = {
-                    'model': response.model,
-                    'results': [result.to_dict() for result in response.results],  # Example if results are objects
-                }
-                formatted_report = json.dumps(response_dict, indent=4, sort_keys=True)
-                log_file.write(f"{datetime.now()} - IP: {user_ip} - Content: {text}\nReport: {formatted_report}\n\n")
+                log_file.write(f"\n{datetime.now()} - IP: {user_ip} - Content: '{text}'<br>\n\n")
             return True
     except Exception as e:
         # Log any errors encountered during moderation checks
@@ -383,6 +378,11 @@ def index():
             return jsonify(result)
         else:
             return jsonify({"error": "Failed to process request."})
+@app.route("/illegal-activity")
+def illegalactivity():
+    with open("illegal-activity.log", "r") as f:
+        output = ''.join(f.readlines())
+    return output
 if __name__ == "__main__":
     app.run(debug=True)
 

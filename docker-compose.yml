@@ -1,5 +1,6 @@
 services:
   frontend:
+    container_name: seniorlab-frontend
     build:
       context: ./Frontend
     ports:
@@ -11,16 +12,27 @@ services:
     depends_on:
       - backend
     networks:
-      - app_network
-
+      - schoolproject_app_network
+    labels:
+      caddy: "ai.seniorlab.ba"
+      caddy.reverse_proxy: "{{upstreams 5173}}"
+      caddy_2: "api.seniorlab.ba"
+      caddy_2.reverse_proxy: "{{upstreams 4000}}"
 
   backend:
+    container_name: seniorlab-backend
+    ports:
+      - "1469:8468"
     build:
       context: ./Backend
     env_file:
       - ./Backend/.env
     networks:
-      - app_network
+      - schoolproject_app_network
 
 networks:
-  app_network:
+  schoolproject_app_network:
+    external: true
+
+volumes:
+  caddy_data_seniorlab:
