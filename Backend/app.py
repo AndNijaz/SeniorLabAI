@@ -34,6 +34,50 @@ tokensoutput = 0
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_KEY")
 
+
+
+def check_for_illegal_content(text, user_ip):
+    """
+    This function uses OpenAI's moderation API to check if the provided text 
+    contains any illegal content. If illegal content is detected, it logs the 
+    user's IP address.
+
+    :param text: Text to be checked for illegal content
+    :param user_ip: IP address of the user who sent the request
+    :return: True if illegal content is detected, False otherwise
+    """
+    try:
+        # Send a request to OpenAI's moderation API to analyze the input text
+        response = openai.moderations.create(
+            model="omni-moderation-latest",
+            input=text,
+        )
+        
+        # Log the raw moderation response
+        logging.debug(f"Moderation API response: {response}")
+
+        # Extract the flagged status directly from the response object
+        if response.results[0].flagged:
+            # If flagged, log the IP address in the illegal-activity.log file
+            logging.error(f"Illegal content detected from IP: {user_ip}")
+            with open("illegal-activity.log", "a") as log_file:
+                # Try converting the response to a dict-like structure.
+                response_dict = {
+                    'model': response.model,
+                    'results': [result.to_dict() for result in response.results],  # Example if results are objects
+                }
+                formatted_report = json.dumps(response_dict, indent=4, sort_keys=True)
+                log_file.write(f"{datetime.now()} - IP: {user_ip} - Content: {text}\nReport: {formatted_report}\n\n")
+            return True
+    except Exception as e:
+        # Log any errors encountered during moderation checks
+        logging.error(f"Error checking for illegal content: {e}")
+        logging.debug(traceback.format_exc())
+
+    return False
+
+
+
 def trim_messages(messages, max_tokens):
     # Initialize tiktoken model. You might need to specify your OpenAI model here.
     encoder = tiktoken.encoding_for_model("gpt-4")
@@ -267,15 +311,35 @@ def chat_with_tools(messages, tools):
 def index():
     if request.method == "POST":
         logging.info("Client connected")
-        text_input = request.get_json()
+        text_input = request.get_json()  # Retrieve JSON data from the client
         logging.debug("Original input: " + pprint.pformat(text_input))
-        data = text_input.get("text", "")
+        data = text_input.get("text", "")  # Extract the 'text' field from JSON
         logging.debug("Parsed input: " + data)
+
+        # Retrieve the user's IP address from the request's X-Forwarded-For header (if present) or the remote address
+        user_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+        logging.debug(f"User IP: {user_ip}")
+        # Check if the input contains any illegal content using the moderation API
+        if check_for_illegal_content(data, user_ip):
+            # If illegal content is detected, return a standardized message
+            return jsonify({
+                "content": {
+                    "longresponse": "Illegal content detected.",
+                    "shortresponse": "Illegal content detected.",
+                    "title": "Illegal content detected.",
+                },
+                "price_info": {
+                    "input_price": "0$",
+                    "output_price": "0$",
+                    "total_price": "0$"
+                }
+            })
+
         date = datetime.today().strftime("%Y-%m")
-        
+
         messages = [
             {
-                "role": "system", 
+                "role": "system",
                 "content": (
                     f"Ti si inteligenti pomagac koji samo odgovara na srpskom/bosanskom jeziku. "
                     f"Pazi da koristiš nazive meseci na srpskom, na primer, koristi 'juni' umesto 'lipanj'. "
@@ -283,16 +347,16 @@ def index():
                     "Ako je potrebno da se ovo tačno odgovori, možeš pozvati funkciju search_google da bi našao više informacija. "
                     "U odgovoru pod nazivom 'longresponse', koristi HTML za formatiranje. "
                     "Formatiraj tekst koristeći tagove kao što su <br> za nove linije, <b> za podebljani tekst, <em> za italik itd. "
-                    "Dodaj izvore kao naslov koji se može kliknuti koristeći <a> tag sa atributom href. "
+                    "Dodaj izvore kao naslov koji se može kliknuti koristeći <a> tag sa atributom href. Napravi da su tagovi plave boje da se vidi sta je link a sta nije! "
                     "Nikada ne koristi HTML u odgovoru pod nazivom 'shortresponse'. Samo koristi čisti tekst bez dodatnog formatiranja. "
                     "Za shortcontent imas limit od 50 rijeci, a u longcontent mozes napisati najvise 200 rijeci"
                 )
             },
             {"role": "user", "content": data}
         ]
-        
+
         result = chat_with_tools(messages, tools)
-        
+
         if isinstance(result, dict):
             # Append used links to the messages for context
             messages.append({
@@ -308,7 +372,7 @@ def index():
                 f"Total price: {((tokens/1000)*0.000150)+((tokensoutput/1000)*0.000600)}$"
             )
             logging.info("Result created")
-            
+
             price_info = {
                 "input_price": f"{(tokens/1000)*0.000150}$",
                 "output_price": f"{(tokensoutput/1000)*0.000600}$",
@@ -319,7 +383,6 @@ def index():
             return jsonify(result)
         else:
             return jsonify({"error": "Failed to process request."})
-
 if __name__ == "__main__":
     app.run(debug=True)
 

@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./Frontend
+    ports:
+      - "9911:5173"
+      - "4000:4000"
+    environment:
+      - VITE_OPEN_AI_ENDPOINT=http://132.226.195.28:8468/
+      - REACT_APP_API_ENDPOINT=http://132.226.195.28:8000/api/data
+    depends_on:
+      - backend
+    networks:
+      - app_network
+
+
+  backend:
+    build:
+      context: ./Backend
+    env_file:
+      - ./Backend/.env
+    networks:
+      - app_network
+
+networks:
+  app_network:
