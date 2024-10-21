@@ -35,7 +35,7 @@ function Search() {
       </div>
 
       <textarea
-        disabled={isLoading}
+        //disabled={isLoading}
         className="w-full bg-neutral-300 rounded-md px-2 py-2 text-2xl mb-4 dark:bg-gray-800 dark:text-[#ffffff]"
         rows={4}
         placeholder={`${
