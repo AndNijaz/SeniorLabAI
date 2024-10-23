@@ -14,8 +14,6 @@ function Search() {
     const query = queryRef.current.value;
     if (query.trim()) {
       setSearch(query);
-    } else {
-      console.log("Search input is empty");
     }
     queryRef.current.value = "";
   }

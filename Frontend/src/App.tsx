@@ -10,7 +10,6 @@ import Spinner from "./ui/Spinner";
 function App() {
   const { search } = useSearch();
 
-  console.log(JSON.stringify(import.meta.env.VITE_OPEN_AI_ENDPOINT));
 
   return (
     <AppLayout>

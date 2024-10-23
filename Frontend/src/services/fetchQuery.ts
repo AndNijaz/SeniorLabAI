@@ -1,5 +1,8 @@
 export const fetchQuery = async (text: string) => {
   try {
+    if (!text){
+      return 
+    } 
     // Use the correct URL to point at your Express server
     const endpoint = import.meta.env.REACT_APP_API_ENDPOINT || 'https://api.seniorlab.ba/api/data';
 
