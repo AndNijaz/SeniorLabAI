@@ -18,16 +18,28 @@ from pydantic import BaseModel
 from flask_cors import CORS
 import pprint
 import tiktoken
+from logging.handlers import RotatingFileHandler
 # Set up logging
-logging.basicConfig(
-    level=logging.DEBUG,
-    filename="app.log",
+# Set up rotating logging
+handler = RotatingFileHandler(
+    "app.log",
+    maxBytes=5 * 1024 * 1024,  # 5 MB
+    backupCount=5,  # Number of backup logs to keep
     encoding="utf-8",
-    filemode="w",
-    format="{asctime} - {levelname} - {message}",
+)
+
+formatter = logging.Formatter(
+    fmt="{asctime} - {levelname} - {message}",
     style="{",
     datefmt="%Y-%m-%d %H:%M",
 )
+
+handler.setFormatter(formatter)
+
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+logger.addHandler(handler)
+logger.propagate = False
 
 tokens = 0
 tokensoutput = 0
@@ -57,19 +69,28 @@ def check_for_illegal_content(text, user_ip):
         logging.debug(f"Moderation API response: {response}")
 
         # Extract the flagged status directly from the response object
-        if response.results[0].flagged:
-            # If flagged, log the IP address in the illegal-activity.log file
-            logging.error(f"Illegal content detected from IP: {user_ip}")
-            with open("illegal-activity.log", "a") as log_file:
-                # Try converting the response to a dict-like structure.
-                log_file.write(f"\n{datetime.now()} - IP: {user_ip} - Content: '{text}'<br>\n\n")
-            return True
+        if response and len(response.results) > 0:
+            if response.results[0].flagged:
+                categories = response.results[0].categories
+                logging.debug(f"Illegal check content: {categories}")
+                # Access attributes directly since categories is a class instance
+                if (categories.illicit or categories.illicit_violent or categories.sexual_minors or categories.violence):
+                    # If flagged for illegal content, log the IP address
+                    logging.error(f"Illegal content detected from IP: {user_ip}")
+                    with open("illegal-activity.log", "a") as log_file:
+                        log_file.write(f"\n{datetime.now()} - IP: {user_ip} - Content: '{text}' - Categories: '{categories}'<br>\n\n")
+                    return True
+        else:
+            logging.error("Response object or response.results is not properly structured.")
+
+
     except Exception as e:
         # Log any errors encountered during moderation checks
         logging.error(f"Error checking for illegal content: {e}")
         logging.debug(traceback.format_exc())
 
     return False
+
 
 
 
@@ -345,6 +366,7 @@ def index():
                     "Dodaj izvore kao naslov koji se može kliknuti koristeći <a> tag sa atributom href. Napravi da su tagovi plave boje da se vidi sta je link a sta nije! "
                     "Nikada ne koristi HTML u odgovoru pod nazivom 'shortresponse'. Samo koristi čisti tekst bez dodatnog formatiranja. "
                     "Za shortcontent imas limit od 50 rijeci, a u longcontent mozes napisati najvise 200 rijeci"
+                    "Ako korisnik pita za pomocne sluzbe, kao sto su policija, hitna, vatrogasci, ili broj za pomoc za nasilje, daj im ove brojeve: Broj za nasilje na podrucju FBIH: 1265, Operativni centri Civilne zaštite: 121, Policija: 122, Vatrogasci: 123, Hitna medicinska pomoć:124 Pomoć na cesti: 1282/1285/1288"
                 )
             },
             {"role": "user", "content": data}
