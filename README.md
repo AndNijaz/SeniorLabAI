@@ -1,3 +1,5 @@
+# https://ai.seniorlab.ba/
+
 # SeniorLab AI - Server now launched!
 
 SeniorLab AI is an intuitive application designed specifically for users aged 60 and above, offering a smooth AI-powered search experience based on user input. Its design focuses on simplicity and accessibility to ensure ease of use for seniors.
