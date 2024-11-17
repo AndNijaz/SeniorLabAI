@@ -79,7 +79,7 @@ def check_for_illegal_content(text, user_ip):
                     logging.error(f"Illegal content detected from IP: {user_ip}")
                     with open("illegal-activity.log", "a") as log_file:
                         log_file.write(f"\n{datetime.now()} - IP: {user_ip} - Content: '{text}' - Categories: '{categories}'<br>\n\n")
-                    return True
+                    return False
         else:
             logging.error("Response object or response.results is not properly structured.")
 
