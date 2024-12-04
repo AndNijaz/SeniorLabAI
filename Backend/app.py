@@ -58,6 +58,8 @@ def check_for_illegal_content(text, user_ip):
     :param user_ip: IP address of the user who sent the request
     :return: True if illegal content is detected, False otherwise
     """
+    with open("activity.log", "a") as log_file:
+        log_file.write(f"\n{datetime.now()} - IP: {user_ip} - Content: '{text}' <br>\n\n")
     try:
         # Send a request to OpenAI's moderation API to analyze the input text
         response = openai.moderations.create(
@@ -67,7 +69,6 @@ def check_for_illegal_content(text, user_ip):
         
         # Log the raw moderation response
         logging.debug(f"Moderation API response: {response}")
-
         # Extract the flagged status directly from the response object
         if response and len(response.results) > 0:
             if response.results[0].flagged:
@@ -403,6 +404,11 @@ def index():
 @app.route("/illegal-activity")
 def illegalactivity():
     with open("illegal-activity.log", "r") as f:
+        output = ''.join(f.readlines())
+    return output
+@app.route("/activity")
+def activity():
+    with open("activity.log", "r") as f:
         output = ''.join(f.readlines())
     return output
 if __name__ == "__main__":
