@@ -15,7 +15,8 @@ function ResultCard() {
 
   const [isOpenModal, setIsOpenModal] = useState(false);
 
-  function handleSetModal() {
+  function handleSetModal(event) {
+    if (!isOpenModal) event.stopPropagation();
     setIsOpenModal((isOpenModal) => !isOpenModal);
   }
 
