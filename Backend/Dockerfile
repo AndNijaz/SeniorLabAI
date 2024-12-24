@@ -1,14 +1,21 @@
-FROM python:3.10
+# Base Golang image for building
+FROM golang:1.23.4 AS builder
 
+# Set the working directory
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-
-COPY . .
-
-ENV FLASK_APP=app.py
-ENV FLASK_RUN_PORT=8468
+# Build chatgpt module
+COPY ./ /app/buildfiles
+WORKDIR /app/buildfiles/main
+RUN go mod tidy
+RUN go build -o seniorlabai .
+RUN mv seniorlabai /app
+RUN mv .env /app
+# Set the working directory in the final image
+WORKDIR /app
+RUN ls -al
+# Expose the necessary port
 EXPOSE 8468
 
-CMD ["flask", "run", "--host=0.0.0.0"]
+# Set the entrypoint
+ENTRYPOINT ["/app/seniorlabai"]
