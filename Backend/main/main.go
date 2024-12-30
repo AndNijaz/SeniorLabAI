@@ -2,12 +2,11 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
-	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
+
+	"log/slog"
 
 	"code.com/chatgpt"
 	"github.com/joho/godotenv"
@@ -17,24 +16,33 @@ type Input struct {
 	Text string `json:"text"`
 }
 
+var logger *slog.Logger
+var requestdata *slog.Logger
+
 func ChatGPTHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "POST":
-		fmt.Println("Recieved request")
-		err := godotenv.Load("./.env")
-		if err != nil {
-			fmt.Println("Error loading .env file")
+		logger.Info("Received request", "method", r.Method, "ip", r.RemoteAddr)
+
+		// Load environment variables
+		if err := godotenv.Load("./.env"); err != nil {
+			logger.Error("Error loading .env file", "error", err, "ip", r.RemoteAddr)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
+
 		apiKey := os.Getenv("OPENAI_API_KEY")
 		if apiKey == "" {
-			fmt.Println("OPENAI_API_KEY is not set in .env file")
+			logger.Error("OPENAI_API_KEY is not set in .env file", "ip", r.RemoteAddr)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
+
 		// Read the request body
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			http.Error(w, "Unable to read request body", http.StatusBadRequest)
+			logger.Error("Unable to read request body", "error", err, "ip", r.RemoteAddr)
+			http.Error(w, "Bad Request", http.StatusBadRequest)
 			return
 		}
 		defer r.Body.Close()
@@ -42,12 +50,14 @@ func ChatGPTHandler(w http.ResponseWriter, r *http.Request) {
 		// Parse the JSON input
 		var input Input
 		if err := json.Unmarshal(body, &input); err != nil {
-			http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+			logger.Error("Invalid JSON format", "error", err, "ip", r.RemoteAddr)
+			http.Error(w, "Bad Request", http.StatusBadRequest)
 			return
 		}
 
 		// Access the `text` field from the input
 		text := input.Text
+		requestdata.Info("Received text", "text", text, "ip", r.RemoteAddr)
 
 		// Process the `text` variable as needed
 		// Example: Respond with the received text
@@ -55,25 +65,61 @@ func ChatGPTHandler(w http.ResponseWriter, r *http.Request) {
 		response := map[string]string{"received": text}
 		jsonResp, err := json.Marshal(response)
 		if err != nil {
-			http.Error(w, "Error forming JSON response", http.StatusInternalServerError)
+			logger.Error("Error forming JSON response", "error", err, "ip", r.RemoteAddr)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
-		resultingtext := chatgpt.ChatGPTAnalyse(string(jsonResp), apiKey)
-		io.WriteString(w, resultingtext)
+
+		resultingText := chatgpt.ChatGPTAnalyse(string(jsonResp), apiKey)
+		_, err = w.Write([]byte(resultingText))
+		if err != nil {
+			logger.Error("Error writing response", "error", err, "ip", r.RemoteAddr)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 
 	default:
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-		return
+		logger.Error("Invalid request method", "method", r.Method, "ip", r.RemoteAddr)
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 	}
 }
 
 func main() {
-	http.HandleFunc("/", ChatGPTHandler)
-	log.Println("Starting server")
-	err := http.ListenAndServe(":8468", nil)
+	// Open the log file
+	file, err := os.OpenFile("../logfile.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		log.Fatal("ListenAndServe: ", err)
-	} else {
-		log.Println("Server started on :8468")
+		// If logging setup fails, use the default logger to report the error and exit
+		slog.Default().Error("Error opening log file", "error", err)
+		os.Exit(1)
 	}
+	defer file.Close()
+	file2, err := os.OpenFile("../usage.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		// If logging setup fails, use the default logger to report the error and exit
+		slog.Default().Error("Error opening log file", "error", err)
+		os.Exit(1)
+	}
+	defer file2.Close()
+
+	// Create a JSON handler for structured logging
+	handler := slog.NewJSONHandler(file, &slog.HandlerOptions{
+		Level: slog.LevelInfo, // Set the desired log level
+	})
+	handler2 := slog.NewJSONHandler(file2, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	})
+	logger = slog.New(handler)
+	requestdata = slog.New(handler2)
+	slog.SetDefault(logger) // Set as the default logger
+	http.HandleFunc("/", ChatGPTHandler)
+	logger.Info("Starting server on :8468")
+
+	// Start the HTTP server
+	logger.Info("Server started on :8468")
+	if err := http.ListenAndServe(":8468", nil); err != nil {
+		logger.Error("ListenAndServe failed", "error", err)
+		os.Exit(1)
+	}
+
+	// This line won't be reached because ListenAndServe is blocking unless it fails
+
 }
