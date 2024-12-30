@@ -1,16 +1,35 @@
-## 🦎 Hello Komodo 🦎
 services:
-  hello_world:
-    image: hello-world
-    # networks:
-    #   - default
-    # ports:
-    #   - 3000:3000
-    # volumes:
-    #   - data:/data
+  frontend:
+    container_name: seniorlab-frontend
+    build:
+      context: ./Frontend
+    ports:
+      - "9911:5173"
+      - "4000:4000"
+    environment:
+      - VITE_OPEN_AI_ENDPOINT=http://132.226.195.28:8468/
+      - REACT_APP_API_ENDPOINT=http://132.226.195.28:8000/api/data
+    depends_on:
+      - backend
+    labels:
+      caddy: "ai.seniorlab.ba"
+      caddy.reverse_proxy: "{{upstreams 5173}}"
+      caddy_2: "api.seniorlab.ba"
+      caddy_2.reverse_proxy: "{{upstreams 4000}}"
+  searxng:
+    container_name: seniorlab-searxng
+    volumes:
+      - ./Backend/searxng:/etc/searxng
+    environment:
+      - BASE_URL=http://localhost:8080/
+      - INSTANCE_NAME=main-instance-seniorlabai
+    image: searxng/searxng
+  backend:
+    container_name: seniorlab-backend
+    ports:
+      - "1469:8468"
+    build:
+      context: ./Backend
+    env_file:
+      - ./Backend/.env
 
-# networks:
-#   default: {}
-
-# volumes:
-#   data:
