@@ -16,6 +16,8 @@ services:
       caddy.reverse_proxy: "{{upstreams 5173}}"
       caddy_2: "api.seniorlab.ba"
       caddy_2.reverse_proxy: "{{upstreams 4000}}"
+    networks:
+      - schoolproject_app_network
   searxng:
     container_name: seniorlab-searxng
     volumes:
@@ -32,4 +34,8 @@ services:
       context: ./Backend
     env_file:
       - ./Backend/.env
-
+    networks:
+      - schoolproject_app_network
+networks:
+  schoolproject_app_network:
+    external: true

@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"strings"
 	"sync"
@@ -18,7 +19,21 @@ import (
 	"golang.org/x/net/html"
 )
 
+var logger *slog.Logger
+
 func scrapeWebpage(url string) (string, error) {
+	file, err := os.OpenFile("./logfile.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		// If logging setup fails, use the default logger to report the error and exit
+		slog.Default().Error("Error opening log file", "error", err)
+		os.Exit(1)
+	}
+	defer file.Close()
+	handler := slog.NewJSONHandler(file, &slog.HandlerOptions{
+		Level: slog.LevelInfo, // Set the desired log level
+	})
+	logger = slog.New(handler)
+	slog.SetDefault(logger)
 	// Ensure the URL has a valid scheme
 	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
 		url = "https://" + url
@@ -27,7 +42,7 @@ func scrapeWebpage(url string) (string, error) {
 	// Fetch the URL
 	resp, err := http.Get(url)
 	if err != nil {
-		log.Printf("Error fetching URL %s: %v", url, err)
+		logger.Error("Error fetching URL %s: %v", url, err)
 		return "", err
 	}
 	defer resp.Body.Close()
@@ -36,7 +51,7 @@ func scrapeWebpage(url string) (string, error) {
 	var result string
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Printf("Error reading response body from URL %s: %v", url, err)
+		logger.Error("Error reading response body from URL %s: %v", url, err)
 		result = "There was an error reading this page, disregard it!"
 	}
 	if result != "" {
@@ -105,7 +120,7 @@ func scrapeWebpage(url string) (string, error) {
 	}
 	date, err := htmldate.FromReader(bytes.NewReader(bodyBytes), opts)
 	if err != nil {
-		log.Printf("Failed to extract date: %v", err)
+		logger.Error("Failed to extract date", "error", err.Error())
 	}
 
 	// Convert the byte slice into a string for output
@@ -120,7 +135,7 @@ func scrapeWebpage(url string) (string, error) {
 func WebpageAnalyse(url string) string {
 	content, err := scrapeWebpage(url)
 	if err != nil {
-		log.Printf("Failed to scrape webpage: %v", err)
+		logger.Error("Failed to scrape webpage", "error", err, "Url", url)
 	}
 	return content
 }
@@ -128,7 +143,7 @@ func WebpageAnalyse(url string) string {
 func TokenCounter(text string) int {
 	tke, err := tiktoken.EncodingForModel("gpt-4o-mini")
 	if err != nil {
-		fmt.Println(err)
+		logger.Error(err.Error())
 	}
 	tokens := tke.Encode(text, nil, nil)
 	return len(tokens)
@@ -137,26 +152,26 @@ func TokenCounter(text string) int {
 func GoogleSearch(query string, count int) string {
 	encodedQuery := url.QueryEscape(query)
 	url := "http://searxng:8080/search?q=" + encodedQuery + "&format=json&safesearch=1"
-	log.Printf("%s", url)
+	logger.Info("Url info", "url", url)
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		log.Fatal(err)
+		logger.Error(err.Error())
 	}
 	req.Header.Set("Accept", "application/json")
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		logger.Error(err.Error())
 	}
 	defer resp.Body.Close()
 	bodyText, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		logger.Error(err.Error())
 	}
 	var data map[string]interface{}
 	err = json.Unmarshal(bodyText, &data)
 	if err != nil {
-		log.Fatal(err)
+		logger.Error(err.Error())
 	}
 	URLlist := ""
 	re := regexp.MustCompile(`^https:\/\/(?:old\.)?reddit\.com.*$`)
@@ -188,7 +203,7 @@ func GoogleSearch(query string, count int) string {
 			}
 		}
 	} else {
-		log.Println("No 'results' key found or it's not an array")
+		logger.Error("No 'results' key found or it's not an array")
 	}
 	urlMap := urlsToMap(URLlist)
 	var (

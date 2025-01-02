@@ -71,6 +71,7 @@ func ChatGPTHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		resultingText := chatgpt.ChatGPTAnalyse(string(jsonResp), apiKey)
+		requestdata.Info("Resulting text", "text", resultingText, "ip", r.RemoteAddr)
 		_, err = w.Write([]byte(resultingText))
 		if err != nil {
 			logger.Error("Error writing response", "error", err, "ip", r.RemoteAddr)
@@ -85,14 +86,14 @@ func ChatGPTHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	// Open the log file
-	file, err := os.OpenFile("../logfile.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	file, err := os.OpenFile("./logfile.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		// If logging setup fails, use the default logger to report the error and exit
 		slog.Default().Error("Error opening log file", "error", err)
 		os.Exit(1)
 	}
 	defer file.Close()
-	file2, err := os.OpenFile("../usage.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	file2, err := os.OpenFile("./usage.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		// If logging setup fails, use the default logger to report the error and exit
 		slog.Default().Error("Error opening log file", "error", err)
@@ -111,6 +112,8 @@ func main() {
 	requestdata = slog.New(handler2)
 	slog.SetDefault(logger) // Set as the default logger
 	http.HandleFunc("/", ChatGPTHandler)
+	http.HandleFunc("/logfile", SendLogs)
+	http.HandleFunc("/usage", SendUsage)
 	logger.Info("Starting server on :8468")
 
 	// Start the HTTP server
@@ -122,4 +125,22 @@ func main() {
 
 	// This line won't be reached because ListenAndServe is blocking unless it fails
 
+}
+func SendLogs(w http.ResponseWriter, r *http.Request) {
+	// Read the contents of the log file
+	data, err := os.ReadFile("./logfile.log")
+	if err != nil {
+		http.Error(w, "Error reading log file", http.StatusInternalServerError)
+		return
+	}
+	w.Write(data)
+}
+func SendUsage(w http.ResponseWriter, r *http.Request) {
+	// Read the contents of the log file
+	data, err := os.ReadFile("./usage.log")
+	if err != nil {
+		http.Error(w, "Error reading log file", http.StatusInternalServerError)
+		return
+	}
+	w.Write(data)
 }
