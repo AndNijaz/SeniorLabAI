@@ -1,6 +1,6 @@
 # SeniorLab AI: AI-Powered Accessibility Platform
 
-[Live](https://ai.seniorlab.ba/)
+You can see the app here: [Live](https://ai.seniorlab.ba/)
 
 ## Project Description
 SeniorLab AI is an innovative platform designed to improve digital accessibility for senior citizens. Leveraging AI technology, the application provides a user-friendly interface with advanced search capabilities and accessibility features, empowering users over the age of 60 to navigate and interact with digital environments more effectively.
