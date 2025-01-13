@@ -7,7 +7,7 @@ const PORT = process.env.REACT_APP_PORT || 4000;
 
 // CORS configuration to allow only https://ai.seniorlab.ba
 const corsOptions = {
-  origin: '*', // Only allow requests from this origin
+  origin: 'https://ai.seniorlab.ba', // Only allow requests from this origin
     methods: 'POST',                    // Allow only POST method
     allowedHeaders: ['Content-Type'],    // Allow only 'Content-Type' header
     optionsSuccessStatus: 200            // Fallback for older browsers

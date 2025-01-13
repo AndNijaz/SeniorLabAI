@@ -10,7 +10,7 @@ WORKDIR /app/buildfiles/main
 RUN go mod tidy
 RUN go build -o seniorlabai .
 RUN mv seniorlabai /app
-RUN mv .env /app
+COPY .env /app
 # Set the working directory in the final image
 WORKDIR /app
 RUN ls -al

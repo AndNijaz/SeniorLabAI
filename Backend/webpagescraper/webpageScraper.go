@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"log"
 	"log/slog"
@@ -19,21 +20,28 @@ import (
 	"golang.org/x/net/html"
 )
 
-var logger *slog.Logger
-
-func scrapeWebpage(url string) (string, error) {
+func initializeLogger() (*slog.Logger, error) {
 	file, err := os.OpenFile("./logfile.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		// If logging setup fails, use the default logger to report the error and exit
 		slog.Default().Error("Error opening log file", "error", err)
-		os.Exit(1)
+		return nil, err
 	}
-	defer file.Close()
+
 	handler := slog.NewJSONHandler(file, &slog.HandlerOptions{
-		Level: slog.LevelInfo, // Set the desired log level
+		Level: slog.LevelInfo,
 	})
-	logger = slog.New(handler)
+	logger := slog.New(handler)
 	slog.SetDefault(logger)
+	return logger, nil
+}
+
+func scrapeWebpage(url string) (string, error) {
+	logger, err := initializeLogger()
+	if err != nil {
+		return "", errors.New("failed to initialize logger")
+	}
+
 	// Ensure the URL has a valid scheme
 	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
 		url = "https://" + url
@@ -59,6 +67,7 @@ func scrapeWebpage(url string) (string, error) {
 			"\n<PUBLISHED DATE>\n" + "No published date found" + "\n</PUBLISHED DATE>\n" + "<URL>\n" + url + "\n</URL>"
 		return finalResult, nil
 	}
+
 	tokenreader := bytes.NewReader(bodyBytes)
 	tokenizer := html.NewTokenizer(tokenreader)
 	textTags := []string{
@@ -133,6 +142,11 @@ func scrapeWebpage(url string) (string, error) {
 }
 
 func WebpageAnalyse(url string) string {
+	logger, err := initializeLogger()
+	if err != nil {
+		return "Failed to initialize logger"
+	}
+
 	content, err := scrapeWebpage(url)
 	if err != nil {
 		logger.Error("Failed to scrape webpage", "error", err, "Url", url)
@@ -141,15 +155,26 @@ func WebpageAnalyse(url string) string {
 }
 
 func TokenCounter(text string) int {
+	logger, err := initializeLogger()
+	if err != nil {
+		return -1
+	}
+
 	tke, err := tiktoken.EncodingForModel("gpt-4o-mini")
 	if err != nil {
 		logger.Error(err.Error())
+		return -1
 	}
 	tokens := tke.Encode(text, nil, nil)
 	return len(tokens)
 }
 
 func GoogleSearch(query string, count int) string {
+	logger, err := initializeLogger()
+	if err != nil {
+		return "Failed to initialize logger"
+	}
+
 	encodedQuery := url.QueryEscape(query)
 	url := "http://searxng:8080/search?q=" + encodedQuery + "&format=json&safesearch=1"
 	logger.Info("Url info", "url", url)

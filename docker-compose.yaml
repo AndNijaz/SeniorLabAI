@@ -9,6 +9,7 @@ services:
     environment:
       - VITE_OPEN_AI_ENDPOINT=http://132.226.195.28:8468/
       - REACT_APP_API_ENDPOINT=http://132.226.195.28:8000/api/data
+      - TZ=Europe/Sarajevo
     depends_on:
       - backend
     labels:
@@ -25,7 +26,10 @@ services:
     environment:
       - BASE_URL=http://localhost:8080/
       - INSTANCE_NAME=main-instance-seniorlabai
+      - TZ=Europe/Sarajevo
     image: searxng/searxng
+    networks:
+      - schoolproject_app_network
   backend:
     container_name: seniorlab-backend
     ports:
@@ -36,6 +40,8 @@ services:
       - ./Backend/.env
     networks:
       - schoolproject_app_network
+    environment:
+      - TZ=Europe/Sarajevo
 networks:
   schoolproject_app_network:
     external: true
