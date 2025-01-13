@@ -71,7 +71,7 @@ func scrapeWebpage(url string) (string, error) {
 	tokenreader := bytes.NewReader(bodyBytes)
 	tokenizer := html.NewTokenizer(tokenreader)
 	textTags := []string{
-		"a", "p", "span", "em", "string", "blockquote", "q", "cite", "h1", "h2", "h3", "h4", "h5", "h6",
+		"p", "span", "em", "string", "blockquote", "q", "cite", "h1", "h2", "h3", "h4", "h5", "h6",
 	}
 	tag := ""
 	enter := false
