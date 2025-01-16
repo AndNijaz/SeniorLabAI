@@ -42,15 +42,26 @@ func scrapeWebpage(url string) (string, error) {
 		return "", errors.New("failed to initialize logger")
 	}
 
+	logger.Info("Processing URL for scraping",
+		"original_url", url)
+
 	// Ensure the URL has a valid scheme
 	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
+		originalURL := url
 		url = "https://" + url
+		logger.Info("Added HTTPS scheme to URL",
+			"original_url", originalURL,
+			"modified_url", url)
 	}
 
 	// Fetch the URL
+	logger.Info("Fetching URL", "url", url)
 	resp, err := http.Get(url)
 	if err != nil {
-		logger.Error("Error fetching URL %s: %v", url, err)
+		logger.Error("Error fetching URL",
+			"url", url,
+			"error", err,
+			"status_code", resp.StatusCode)
 		return "", err
 	}
 	defer resp.Body.Close()
@@ -160,13 +171,25 @@ func TokenCounter(text string) int {
 		return -1
 	}
 
+	logger.Info("Starting token count",
+		"text_length", len(text))
+
 	tke, err := tiktoken.EncodingForModel("gpt-4o-mini")
 	if err != nil {
-		logger.Error(err.Error())
+		logger.Error("Failed to create token encoder",
+			"error", err,
+			"model", "gpt-4o-mini")
 		return -1
 	}
+
 	tokens := tke.Encode(text, nil, nil)
-	return len(tokens)
+	tokenCount := len(tokens)
+
+	logger.Info("Token count completed",
+		"text_length", len(text),
+		"token_count", tokenCount)
+
+	return tokenCount
 }
 
 func GoogleSearch(query string, count int) string {
@@ -175,29 +198,54 @@ func GoogleSearch(query string, count int) string {
 		return "Failed to initialize logger"
 	}
 
+	logger.Info("Starting Google search",
+		"query", query,
+		"requested_results", count)
+
 	encodedQuery := url.QueryEscape(query)
-	url := "http://searxng:8080/search?q=" + encodedQuery + "&format=json&safesearch=1"
-	logger.Info("Url info", "url", url)
+	searchURL := "http://searxng:8080/search?q=" + encodedQuery + "&format=json&safesearch=1"
+	logger.Info("Search request prepared",
+		"encoded_query", encodedQuery,
+		"search_url", searchURL)
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", searchURL, nil)
 	if err != nil {
-		logger.Error(err.Error())
+		logger.Error("Failed to create HTTP request",
+			"error", err,
+			"url", searchURL)
+		return "Failed to create search request"
 	}
+
 	req.Header.Set("Accept", "application/json")
 	resp, err := client.Do(req)
 	if err != nil {
-		logger.Error(err.Error())
+		logger.Error("Failed to execute HTTP request",
+			"error", err,
+			"url", searchURL)
+		return "Failed to execute search request"
 	}
 	defer resp.Body.Close()
+
 	bodyText, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logger.Error(err.Error())
+		logger.Error("Failed to read response body",
+			"error", err,
+			"url", searchURL)
+		return "Failed to read search results"
 	}
+
 	var data map[string]interface{}
 	err = json.Unmarshal(bodyText, &data)
 	if err != nil {
-		logger.Error(err.Error())
+		logger.Error("Failed to parse JSON response",
+			"error", err,
+			"response_body", string(bodyText))
+		return "Failed to parse search results"
 	}
+
+	logger.Info("Successfully retrieved search results",
+		"status_code", resp.StatusCode,
+		"body_size", len(bodyText))
 	URLlist := ""
 	re := regexp.MustCompile(`^https:\/\/(?:old\.)?reddit\.com.*$`)
 	if results, ok := data["results"].([]interface{}); ok {
@@ -205,7 +253,7 @@ func GoogleSearch(query string, count int) string {
 			if i >= count {
 				break
 			}
-			if re.MatchString(url) {
+			if re.MatchString(searchURL) {
 				i -= 1
 				continue
 			}
@@ -245,17 +293,33 @@ func GoogleSearch(query string, count int) string {
 
 			select {
 			case <-ctx.Done():
+				logger.Info("Context cancelled, stopping webpage analysis",
+					"url", url)
 				return
 			default:
 			}
+
+			logger.Info("Starting webpage analysis in goroutine",
+				"url", url)
 			analysis := WebpageAnalyse(url)
+
 			mu.Lock()
+			originalLength := len(prompt)
 			prompt += analysis
 			currentTokenCount := TokenCounter(prompt)
-			mu.Unlock()
+			logger.Info("Updated prompt in goroutine",
+				"url", url,
+				"original_length", originalLength,
+				"new_length", len(prompt),
+				"token_count", currentTokenCount)
+
 			if currentTokenCount > 70000 {
+				logger.Warn("Token limit exceeded, cancelling remaining operations",
+					"token_count", currentTokenCount,
+					"limit", 70000)
 				cancel()
 			}
+			mu.Unlock()
 		}(url)
 	}
 	wg.Wait()

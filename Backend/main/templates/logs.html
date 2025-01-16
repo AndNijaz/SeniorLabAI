@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log Viewer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .json-key { color: #881391; }
+        .json-string { color: #268bd2; }
+        .json-number { color: #859900; }
+        .json-boolean { color: #cb4b16; }
+        .json-null { color: #93a1a1; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-2xl font-bold text-gray-800">Log Viewer</h1>
+                <div class="flex gap-4">
+                    <input type="text" id="search" placeholder="Search logs..." 
+                           class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <select id="level-filter" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="all">All Levels</option>
+                        <option value="INFO">Info</option>
+                        <option value="ERROR">Error</option>
+                        <option value="WARN">Warning</option>
+                    </select>
+                    <input type="number" id="page-size" value="50" min="10" max="200" 
+                           class="px-4 py-2 border rounded-lg w-24 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            
+            <div id="log-container" class="space-y-4 font-mono text-sm"></div>
+            
+            <div class="mt-6 flex justify-between items-center">
+                <div class="text-sm text-gray-600">
+                    Showing <span id="showing-range">0-0</span> of <span id="total-entries">0</span> entries
+                </div>
+                <div class="flex gap-2">
+                    <button id="prev-page" class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50">
+                        Previous
+                    </button>
+                    <button id="next-page" class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50">
+                        Next
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allLogs = [];
+        let currentPage = 0;
+        let filteredLogs = [];
+
+        function formatJSON(input) {
+            try {
+                // If input is already an object, stringify it
+                if (typeof input === 'object') {
+                    const formatted = JSON.stringify(input, null, 2);
+                    return formatted.replace(/"([^"]+)":/g, '<span class="json-key">"$1"</span>:')
+                                 .replace(/"([^"]+)"/g, '<span class="json-string">"$1"</span>')
+                                 .replace(/\b(\d+)\b/g, '<span class="json-number">$1</span>')
+                                 .replace(/\b(true|false)\b/g, '<span class="json-boolean">$1</span>')
+                                 .replace(/\bnull\b/g, '<span class="json-null">null</span>');
+                }
+                
+                // If input is a string in object notation format, convert it to proper JSON
+                if (typeof input === 'string' && input.trim().startsWith('Object {')) {
+                    // Remove 'Object {' prefix and closing '}'
+                    let jsonStr = input.trim().replace(/^Object \{|\}$/g, '');
+                    // Convert to proper JSON format
+                    jsonStr = '{' + jsonStr
+                        .split(',')
+                        .map(pair => {
+                            let [key, value] = pair.split(':').map(s => s.trim());
+                            // Wrap key in quotes if not already
+                            key = key.startsWith('"') ? key : `"${key}"`;
+                            return `${key}:${value}`;
+                        })
+                        .join(',') + '}';
+                    
+                    const obj = JSON.parse(jsonStr);
+                    return formatJSON(obj); // Recursively format the parsed object
+                }
+                
+                // If it's a regular JSON string, parse and format it
+                const obj = JSON.parse(input);
+                return formatJSON(obj);
+            } catch (e) {
+                console.error('Error formatting JSON:', e);
+                return input; // Return original input if parsing fails
+            }
+        }
+
+        function parseComplexJSON(text) {
+            try {
+                // First, parse the outer JSON to get the text field
+                let processedText = text;
+                
+                // Remove outer quotes if present
+                if (processedText.startsWith('"') && processedText.endsWith('"')) {
+                    processedText = processedText.slice(1, -1);
+                }
+                
+                // Parse the JSON string
+                const parsed = JSON.parse(processedText);
+                
+                // The content fields are already valid JSON strings with escaped HTML
+                // No need to parse them again, just return the parsed object
+                return parsed;
+            } catch (e) {
+                console.error('Error parsing JSON:', e);
+                console.error('Original text:', text);
+                return null;
+            }
+        }
+
+        function displayLogs() {
+            const container = document.getElementById('log-container');
+            const pageSize = parseInt(document.getElementById('page-size').value);
+            const start = currentPage * pageSize;
+            const end = Math.min(start + pageSize, filteredLogs.length);
+            
+            container.innerHTML = '';
+            
+            for (let i = start; i < end; i++) {
+                const log = filteredLogs[i];
+                const div = document.createElement('div');
+                div.className = 'p-4 rounded-lg ' + 
+                    (log.level === 'ERROR' ? 'bg-red-50' :
+                     log.level === 'WARN' ? 'bg-yellow-50' : 'bg-blue-50');
+
+                // Show the raw log
+                const rawLogDiv = document.createElement('pre');
+                rawLogDiv.className = 'whitespace-pre-wrap';
+                rawLogDiv.innerHTML = formatJSON(log);
+                div.appendChild(rawLogDiv);
+                
+                // Try to parse and display any JSON in the text field
+                if (log.text) {
+                    try {
+                        // First try to parse the text field as JSON
+                        let isValidJSON = false;
+                        try {
+                            JSON.parse(log.text);
+                            isValidJSON = true;
+                        } catch (e) {
+                            // Not valid JSON, skip parsing
+                            isValidJSON = false;
+                        }
+
+                        // Only proceed with parsing if text contains valid JSON
+                        const parsedJson = isValidJSON ? parseComplexJSON(log.text) : null;
+                        if (parsedJson && parsedJson.content) {
+                            const parsedDiv = document.createElement('div');
+                            parsedDiv.className = 'mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200';
+                            
+                            // Header with internet search status
+                            const header = document.createElement('div');
+                            header.className = 'flex justify-between items-center mb-2';
+                            header.innerHTML = `
+                                <div class="text-sm font-medium text-gray-600">Parsed Response:</div>
+                                <div class="text-xs text-gray-500">
+                                    ${parsedJson.internet_search ? `
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                            Internet Search Used
+                                        </span>
+                                    ` : ''}
+                                </div>
+                            `;
+                            parsedDiv.appendChild(header);
+
+                            // Content grid
+                            const grid = document.createElement('div');
+                            grid.className = 'grid grid-cols-2 gap-4';
+
+                            // Left column
+                            const leftCol = document.createElement('div');
+                            leftCol.className = 'space-y-2';
+
+                            if (parsedJson.content.title) {
+                                const titleDiv = document.createElement('div');
+                                titleDiv.className = 'font-bold text-lg';
+                                titleDiv.innerHTML = parsedJson.content.title;
+                                leftCol.appendChild(titleDiv);
+                            }
+
+                            if (parsedJson.content.shortresponse) {
+                                const shortDiv = document.createElement('div');
+                                shortDiv.className = 'bg-blue-50 p-3 rounded shadow-sm';
+                                shortDiv.innerHTML = `
+                                    <div class="text-xs font-medium text-gray-500 mb-1">Short Response:</div>
+                                    <div class="text-sm">${parsedJson.content.shortresponse}</div>
+                                `;
+                                leftCol.appendChild(shortDiv);
+                            }
+
+                            // Right column
+                            const rightCol = document.createElement('div');
+                            if (parsedJson.content.longresponse) {
+                                const longDiv = document.createElement('div');
+                                longDiv.className = 'bg-green-50 p-3 rounded shadow-sm';
+                                longDiv.innerHTML = `
+                                    <div class="text-xs font-medium text-gray-500 mb-1">Long Response:</div>
+                                    <div class="prose prose-sm max-w-none" style="word-wrap: break-word;">
+                                        ${parsedJson.content.longresponse}
+                                    </div>
+                                `;
+                                rightCol.appendChild(longDiv);
+                            }
+
+                            grid.appendChild(leftCol);
+                            grid.appendChild(rightCol);
+                            parsedDiv.appendChild(grid);
+                            div.appendChild(parsedDiv);
+                        }
+                    } catch (e) {
+                        console.error('Error processing log entry:', e);
+                    }
+                }
+                
+                container.appendChild(div);
+            }
+
+            document.getElementById('showing-range').textContent = `${start + 1}-${end}`;
+            document.getElementById('total-entries').textContent = filteredLogs.length;
+            
+            document.getElementById('prev-page').disabled = currentPage === 0;
+            document.getElementById('next-page').disabled = end >= filteredLogs.length;
+        }
+
+        function filterLogs() {
+            const searchTerm = document.getElementById('search').value.toLowerCase();
+            const levelFilter = document.getElementById('level-filter').value;
+            
+            filteredLogs = allLogs.filter(log => {
+                const matchesSearch = JSON.stringify(log).toLowerCase().includes(searchTerm);
+                const matchesLevel = levelFilter === 'all' || log.level === levelFilter;
+                return matchesSearch && matchesLevel;
+            });
+            
+            currentPage = 0;
+            displayLogs();
+        }
+
+        // Event Listeners
+        document.getElementById('search').addEventListener('input', filterLogs);
+        document.getElementById('level-filter').addEventListener('change', filterLogs);
+        document.getElementById('page-size').addEventListener('change', displayLogs);
+        document.getElementById('prev-page').addEventListener('click', () => {
+            if (currentPage > 0) {
+                currentPage--;
+                displayLogs();
+            }
+        });
+        document.getElementById('next-page').addEventListener('click', () => {
+            const pageSize = parseInt(document.getElementById('page-size').value);
+            if ((currentPage + 1) * pageSize < filteredLogs.length) {
+                currentPage++;
+                displayLogs();
+            }
+        });
+
+        // Load logs
+        fetch(window.location.pathname + '/data')
+            .then(response => response.json())
+            .then(logs => {
+                allLogs = logs;
+                filteredLogs = logs;
+                displayLogs();
+            });
+    </script>
+</body>
+</html>

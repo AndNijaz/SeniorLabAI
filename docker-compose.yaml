@@ -43,8 +43,7 @@ services:
     environment:
       - TZ=Europe/Sarajevo
     volumes:
-      - ./logfile.log:/app/logfile.log
-      - ./usage.log:/app/usage.log
+      - ./logs:/app/logs
 networks:
   schoolproject_app_network:
     external: true
